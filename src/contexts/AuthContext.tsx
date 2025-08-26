@@ -23,6 +23,7 @@ interface AuthContextType {
   getAllUsers: () => Promise<{ data?: User[]; error?: any }>;
   updateUser: (userId: string, updates: Partial<User>) => Promise<{ error?: any }>;
   isAdmin: () => boolean;
+  getAdminStats: () => Promise<{ data?: { activeUsers: number; newUsers: number; reports: number }; error?: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -301,6 +302,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return user?.role === 'admin';
   };
 
+  const getAdminStats = async () => {
+    try {
+      if (!user || user.role !== 'admin') {
+        return { error: { message: 'Acesso negado. Apenas administradores podem acessar esta funcionalidade.' } };
+      }
+
+      const { data, error } = await supabase.rpc('get_admin_stats');
+      
+      if (error) throw error;
+
+      const response = data as any;
+      if (response.success) {
+        return { 
+          data: {
+            activeUsers: response.stats.active_users || 0,
+            newUsers: response.stats.new_users || 0,
+            reports: response.stats.reports || 0
+          }
+        };
+      } else {
+        return { error: { message: response.error || 'Erro ao buscar estatísticas' } };
+      }
+    } catch (error) {
+      return { error };
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -314,6 +342,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     getAllUsers,
     updateUser,
     isAdmin,
+    getAdminStats,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

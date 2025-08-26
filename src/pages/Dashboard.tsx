@@ -3,17 +3,44 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { LogOut, User, Phone, Mail, Shield, Settings, CreditCard, Users } from 'lucide-react';
+import { LogOut, User, Phone, Mail, Shield, Settings, CreditCard, Users, Loader2 } from 'lucide-react';
 import { EditProfile } from '@/components/EditProfile';
 import { ChangePassword } from '@/components/ChangePassword';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, getAdminStats } = useAuth();
   const navigate = useNavigate();
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [adminStats, setAdminStats] = useState({
+    activeUsers: 0,
+    newUsers: 0,
+    reports: 0
+  });
+  const [loadingStats, setLoadingStats] = useState(false);
+
+  // Carregar estatísticas do admin
+  useEffect(() => {
+    const loadAdminStats = async () => {
+      if (user?.role === 'admin') {
+        setLoadingStats(true);
+        try {
+          const { data, error } = await getAdminStats();
+          if (data) {
+            setAdminStats(data);
+          }
+        } catch (error) {
+          console.error('Erro ao carregar estatísticas:', error);
+        } finally {
+          setLoadingStats(false);
+        }
+      }
+    };
+
+    loadAdminStats();
+  }, [user, getAdminStats]);
 
   if (!user) {
     return (
@@ -204,17 +231,35 @@ const Dashboard = () => {
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="text-center p-4 border rounded-lg">
-                    <h3 className="text-2xl font-bold">0</h3>
+                    {loadingStats ? (
+                      <div className="flex items-center justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      </div>
+                    ) : (
+                      <h3 className="text-2xl font-bold">{adminStats.activeUsers}</h3>
+                    )}
                     <p className="text-sm text-muted-foreground">Usuários Ativos</p>
                   </div>
                   
                   <div className="text-center p-4 border rounded-lg">
-                    <h3 className="text-2xl font-bold">0</h3>
-                    <p className="text-sm text-muted-foreground">Novos Usuários</p>
+                    {loadingStats ? (
+                      <div className="flex items-center justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      </div>
+                    ) : (
+                      <h3 className="text-2xl font-bold">{adminStats.newUsers}</h3>
+                    )}
+                    <p className="text-sm text-muted-foreground">Novos Usuários (30 dias)</p>
                   </div>
                   
                   <div className="text-center p-4 border rounded-lg">
-                    <h3 className="text-2xl font-bold">0</h3>
+                    {loadingStats ? (
+                      <div className="flex items-center justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      </div>
+                    ) : (
+                      <h3 className="text-2xl font-bold">{adminStats.reports}</h3>
+                    )}
                     <p className="text-sm text-muted-foreground">Relatórios Gerados</p>
                   </div>
                 </div>
