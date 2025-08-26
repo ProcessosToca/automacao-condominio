@@ -1,0 +1,150 @@
+// Script para aplicar a migração do Supabase
+const https = require('https');
+
+// Configurações do Supabase
+const SUPABASE_URL = 'https://jamzaegwhzmtvierjckg.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphbXphZWd3aHptdHZpZXJqY2tnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5NzI4MDAsImV4cCI6MjA1MDU0ODgwMH0.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8'; // Substitua pela sua chave
+
+const migrationSQL = `
+-- Add CPF column to profiles table
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS cpf TEXT;
+
+-- Create function to update user profile
+CREATE OR REPLACE FUNCTION public.update_user_profile(
+  p_user_id text,
+  p_full_name text,
+  p_email text,
+  p_phone text DEFAULT NULL,
+  p_cpf text DEFAULT NULL
+)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  existing_user record;
+BEGIN
+  -- Check if user exists
+  SELECT * INTO existing_user
+  FROM profiles 
+  WHERE user_id::text = p_user_id;
+  
+  IF NOT FOUND THEN
+    RETURN json_build_object('error', 'Usuário não encontrado');
+  END IF;
+
+  -- Check if new email is already in use by another user
+  IF p_email != existing_user.email AND EXISTS (
+    SELECT 1 FROM profiles 
+    WHERE email = p_email AND user_id::text != p_user_id
+  ) THEN
+    RETURN json_build_object('error', 'Este email já está sendo usado por outro usuário');
+  END IF;
+
+  -- Update user profile
+  UPDATE profiles 
+  SET 
+    full_name = p_full_name,
+    email = p_email,
+    phone = p_phone,
+    cpf = p_cpf,
+    updated_at = now()
+  WHERE user_id::text = p_user_id;
+  
+  -- Return success with updated user data
+  RETURN json_build_object(
+    'success', true,
+    'user', json_build_object(
+      'id', existing_user.user_id,
+      'email', p_email,
+      'full_name', p_full_name,
+      'phone', p_phone,
+      'cpf', p_cpf,
+      'role', existing_user.role
+    ),
+    'message', 'Perfil atualizado com sucesso'
+  );
+EXCEPTION
+  WHEN OTHERS THEN
+    RETURN json_build_object('error', SQLERRM);
+END;
+$$;
+
+-- Create function to update user password by user_id
+CREATE OR REPLACE FUNCTION public.update_user_password_by_id(
+  p_user_id text,
+  p_new_password text
+)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  existing_user record;
+BEGIN
+  -- Check if user exists
+  SELECT * INTO existing_user
+  FROM profiles 
+  WHERE user_id::text = p_user_id;
+  
+  IF NOT FOUND THEN
+    RETURN json_build_object('error', 'Usuário não encontrado');
+  END IF;
+
+  -- Update password
+  UPDATE profiles 
+  SET 
+    password = p_new_password,
+    updated_at = now()
+  WHERE user_id::text = p_user_id;
+  
+  RETURN json_build_object(
+    'success', true,
+    'message', 'Senha atualizada com sucesso'
+  );
+EXCEPTION
+  WHEN OTHERS THEN
+    RETURN json_build_object('error', SQLERRM);
+END;
+$$;
+`;
+
+const postData = JSON.stringify({
+  query: migrationSQL
+});
+
+const options = {
+  hostname: 'jamzaegwhzmtvierjckg.supabase.co',
+  port: 443,
+  path: '/rest/v1/rpc/exec_sql',
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Content-Length': Buffer.byteLength(postData),
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+  }
+};
+
+const req = https.request(options, (res) => {
+  console.log(`Status: ${res.statusCode}`);
+  console.log(`Headers: ${JSON.stringify(res.headers)}`);
+  
+  let data = '';
+  res.on('data', (chunk) => {
+    data += chunk;
+  });
+  
+  res.on('end', () => {
+    console.log('Response:', data);
+  });
+});
+
+req.on('error', (e) => {
+  console.error(`Problem with request: ${e.message}`);
+});
+
+req.write(postData);
+req.end();
