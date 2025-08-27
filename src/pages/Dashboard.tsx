@@ -213,9 +213,6 @@ const Dashboard = () => {
                 <Button className="w-full" variant="outline">
                   Relatórios
                 </Button>
-                <Button className="w-full" variant="outline">
-                  Configurações do Sistema
-                </Button>
               </CardContent>
             </Card>
           )}

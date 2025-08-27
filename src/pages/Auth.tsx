@@ -140,7 +140,6 @@ const Auth = () => {
         setConfirmPassword('');
         setFullName('');
         setPhone('');
-        setRole('user');
       }
     } catch (error) {
       toast({

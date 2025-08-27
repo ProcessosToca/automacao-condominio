@@ -17,7 +17,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string, phone?: string) => Promise<{ error?: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error?: any }>;
-  resetPasswordWithEmail: (email: string) => Promise<{ error?: any; newPassword?: string }>;
+  resetPasswordWithEmail: (email: string) => Promise<{ success: boolean; newPassword?: string; message?: string }>;
   updateProfile: (fullName: string, email: string, phone?: string, cpf?: string) => Promise<{ error?: any }>;
   updatePassword: (currentPassword: string, newPassword: string) => Promise<{ error?: any }>;
   getAllUsers: () => Promise<{ data?: User[]; error?: any }>;
@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: { message: 'Credenciais inválidas' } };
       }
 
-      // Buscar perfil no profiles
+      // Buscar perfil no profiles usando id (que é a chave primária)
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -81,7 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Se não existir perfil, cria padrão
       if (!ensuredProfile) {
         const defaultProfile = {
-          id: authUser.id,
+          id: authUser.id, // id é a chave primária e deve ser igual ao auth.users.id
           email: authUser.email,
           full_name: (authUser.user_metadata && (authUser.user_metadata.full_name as string)) || 'Usuário',
           phone: (authUser.user_metadata && (authUser.user_metadata.phone as string)) || null,
@@ -108,7 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const userData: User = {
-        id: ensuredProfile.id,
+        id: ensuredProfile.id || authUser.id,
         email: ensuredProfile.email || authUser.email || '',
         full_name: ensuredProfile.full_name || 'Usuário',
         phone: ensuredProfile.phone || undefined,
@@ -131,6 +131,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     phone?: string
   ) => {
     try {
+      // Primeiro, verificar se o usuário já existe
+      try {
+        const { data: existingUser, error: checkError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('email', email)
+          .single();
+
+        if (existingUser) {
+          return { error: { message: 'Usuário já existe com este email' } };
+        }
+      } catch (error) {
+        // Se não encontrar, continuar com o signup
+        console.log('Usuário não encontrado, continuando com signup...');
+      }
+
+      // Fazer signup no Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -149,28 +166,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const newUser = data.user;
 
       if (newUser) {
-        // Garante/atualiza o profile correspondente
-        const upsertProfile = {
-          id: newUser.id,
-          email: newUser.email,
-          full_name: fullName,
-          phone: phone || null,
-          role: 'user',
-          is_active: true,
-        } as any;
-
-        const { error: upsertError } = await supabase
+        // Aguardar um pouco para o trigger processar
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Verificar se o profile foi criado pelo trigger
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .upsert(upsertProfile);
+          .select('*')
+          .eq('id', newUser.id)
+          .single();
 
-        if (upsertError) {
-          return { error: upsertError };
+        if (profileError || !profile) {
+          // Se o trigger falhou, criar manualmente
+          const upsertProfile = {
+            id: newUser.id, // id deve ser igual ao auth.users.id
+            email: newUser.email,
+            full_name: fullName,
+            phone: phone || null,
+            role: 'user',
+            is_active: true,
+          } as any;
+
+          const { error: upsertError } = await supabase
+            .from('profiles')
+            .upsert(upsertProfile);
+
+          if (upsertError) {
+            console.error('Erro ao criar profile manualmente:', upsertError);
+            // Não retornar erro aqui, pois o usuário foi criado no auth
+          }
         }
       }
 
       // Não efetua login automático; usuário poderá fazer login após cadastro
       return { error: null };
     } catch (error) {
+      console.error('Erro no signUp:', error);
       return { error };
     }
   };
