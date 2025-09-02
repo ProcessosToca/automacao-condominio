@@ -16,8 +16,9 @@ import {
   ArrowLeft,
   Plus
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AdminCompany {
   id: string;
@@ -36,6 +37,10 @@ const AdminCompanyRegistration = () => {
   const navigate = useNavigate();
   const [adminCompanies, setAdminCompanies] = useState<AdminCompany[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -46,26 +51,57 @@ const AdminCompanyRegistration = () => {
     notes: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const newCompany: AdminCompany = {
-      id: Date.now().toString(),
-      ...formData,
-      created_at: new Date().toISOString()
-    };
+    setIsSubmitting(true);
+    setErrorMessage('');
 
-    setAdminCompanies([...adminCompanies, newCompany]);
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      address: '',
-      contact_person: '',
-      cnpj: '',
-      notes: ''
-    });
-    setIsFormOpen(false);
+    try {
+      const payload = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        address: formData.address.trim(),
+        contact_person: formData.contact_person.trim(),
+        cnpj: formData.cnpj.trim(),
+        notes: formData.notes.trim(),
+      } as any;
+
+      if (editingId) {
+        const { data, error } = await (supabase as any)
+          .from('admin_companies')
+          .update(payload)
+          .eq('id', editingId)
+          .select('*')
+          .single();
+        if (error) throw error;
+        setAdminCompanies(prev => prev.map(c => c.id === editingId ? (data as AdminCompany) : c));
+      } else {
+        const { data, error } = await (supabase as any)
+          .from('admin_companies')
+          .insert(payload)
+          .select('*')
+          .single();
+        if (error) throw error;
+        setAdminCompanies(prev => [data as AdminCompany, ...prev]);
+      }
+
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        contact_person: '',
+        cnpj: '',
+        notes: ''
+      });
+      setEditingId(null);
+      setIsFormOpen(false);
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Erro ao salvar administradora');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -74,6 +110,27 @@ const AdminCompanyRegistration = () => {
       [field]: value
     }));
   };
+
+  const loadCompanies = async () => {
+    try {
+      setIsLoading(true);
+      setErrorMessage('');
+      const { data, error } = await (supabase as any)
+        .from('admin_companies')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setAdminCompanies((data || []) as AdminCompany[]);
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Erro ao carregar administradoras');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCompanies();
+  }, []);
 
   if (!user) {
     return (
@@ -129,7 +186,7 @@ const AdminCompanyRegistration = () => {
                 Cadastre as administradoras responsáveis pelos condomínios
               </p>
             </div>
-            <Button onClick={() => setIsFormOpen(true)}>
+            <Button onClick={() => { setIsFormOpen(true); setEditingId(null); }}>
               <Plus className="h-4 w-4 mr-2" />
               Nova Administradora
             </Button>
@@ -145,6 +202,9 @@ const AdminCompanyRegistration = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                {errorMessage && (
+                  <div className="text-sm text-red-600 mb-2">{errorMessage}</div>
+                )}
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
@@ -232,9 +292,9 @@ const AdminCompanyRegistration = () => {
                     >
                       Cancelar
                     </Button>
-                    <Button type="submit">
+                    <Button type="submit" disabled={isSubmitting}>
                       <Save className="h-4 w-4 mr-2" />
-                      Salvar
+                      {editingId ? 'Atualizar' : 'Salvar'}
                     </Button>
                   </div>
                 </form>
@@ -295,10 +355,29 @@ const AdminCompanyRegistration = () => {
                     </div>
                   )}
 
-                  <div className="pt-2 border-t">
+                  <div className="pt-2 border-t flex items-center justify-between">
                     <p className="text-xs text-muted-foreground">
                       Cadastrada em: {new Date(company.created_at).toLocaleDateString('pt-BR')}
                     </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setFormData({
+                          name: company.name || '',
+                          email: company.email || '',
+                          phone: company.phone || '',
+                          address: company.address || '',
+                          contact_person: company.contact_person || '',
+                          cnpj: company.cnpj || '',
+                          notes: company.notes || ''
+                        });
+                        setEditingId(company.id);
+                        setIsFormOpen(true);
+                      }}
+                    >
+                      Editar
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
