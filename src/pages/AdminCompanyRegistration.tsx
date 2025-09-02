@@ -14,8 +14,20 @@ import {
   User, 
   Save,
   ArrowLeft,
-  Plus
+  Plus,
+  Trash
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,6 +53,7 @@ const AdminCompanyRegistration = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -131,6 +144,23 @@ const AdminCompanyRegistration = () => {
   useEffect(() => {
     loadCompanies();
   }, []);
+
+  const handleDelete = async (companyId: string) => {
+    setErrorMessage('');
+    setDeletingId(companyId);
+    try {
+      const { error } = await (supabase as any)
+        .from('admin_companies')
+        .delete()
+        .eq('id', companyId);
+      if (error) throw error;
+      setAdminCompanies(prev => prev.filter(c => c.id !== companyId));
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Erro ao excluir administradora');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (!user) {
     return (
@@ -359,25 +389,50 @@ const AdminCompanyRegistration = () => {
                     <p className="text-xs text-muted-foreground">
                       Cadastrada em: {new Date(company.created_at).toLocaleDateString('pt-BR')}
                     </p>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setFormData({
-                          name: company.name || '',
-                          email: company.email || '',
-                          phone: company.phone || '',
-                          address: company.address || '',
-                          contact_person: company.contact_person || '',
-                          cnpj: company.cnpj || '',
-                          notes: company.notes || ''
-                        });
-                        setEditingId(company.id);
-                        setIsFormOpen(true);
-                      }}
-                    >
-                      Editar
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setFormData({
+                            name: company.name || '',
+                            email: company.email || '',
+                            phone: company.phone || '',
+                            address: company.address || '',
+                            contact_person: company.contact_person || '',
+                            cnpj: company.cnpj || '',
+                            notes: company.notes || ''
+                          });
+                          setEditingId(company.id);
+                          setIsFormOpen(true);
+                        }}
+                      >
+                        Editar
+                      </Button>
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="sm" variant="destructive" disabled={deletingId === company.id}>
+                            <Trash className="h-4 w-4 mr-2" />
+                            {deletingId === company.id ? 'Excluindo...' : 'Excluir'}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir administradora?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta ação não pode ser desfeita. Isso removerá permanentemente a administradora e seus dados relacionados.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(company.id)}>
+                              Confirmar exclusão
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
