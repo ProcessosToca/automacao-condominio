@@ -267,15 +267,6 @@ const PropertyManagement = () => {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="admin_phone">Telefone do Administrador</Label>
-                  <Input
-                    id="admin_phone"
-                    value={formData.admin_phone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, admin_phone: e.target.value }))}
-                    placeholder="(11) 99999-9999"
-                  />
-                </div>
               </div>
 
               <div className="flex justify-end space-x-4">
