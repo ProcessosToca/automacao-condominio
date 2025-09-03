@@ -89,6 +89,92 @@ export type Database = {
         }
         Relationships: []
       }
+      properties: {
+        Row: {
+          id: string
+          name: string
+          address: string | null
+          admin_name: string | null
+          admin_email: string | null
+          admin_phone: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          address?: string | null
+          admin_name?: string | null
+          admin_email?: string | null
+          admin_phone?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          address?: string | null
+          admin_name?: string | null
+          admin_email?: string | null
+          admin_phone?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      occurrences: {
+        Row: {
+          id: string
+          property_id: string
+          title: string
+          description: string
+          status: Database["public"]["Enums"]["occurrence_status"]
+          priority: Database["public"]["Enums"]["occurrence_priority"]
+          admin_name: string | null
+          admin_phone: string | null
+          responsible_collector: string | null
+          ai_summary: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          property_id: string
+          title: string
+          description: string
+          status?: Database["public"]["Enums"]["occurrence_status"]
+          priority?: Database["public"]["Enums"]["occurrence_priority"]
+          admin_name?: string | null
+          admin_phone?: string | null
+          responsible_collector?: string | null
+          ai_summary?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          property_id?: string
+          title?: string
+          description?: string
+          status?: Database["public"]["Enums"]["occurrence_status"]
+          priority?: Database["public"]["Enums"]["occurrence_priority"]
+          admin_name?: string | null
+          admin_phone?: string | null
+          responsible_collector?: string | null
+          ai_summary?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "occurrences_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -163,6 +249,8 @@ export type Database = {
     }
     Enums: {
       user_role: "admin" | "user"
+      occurrence_status: "open" | "in_progress" | "resolved" | "closed"
+      occurrence_priority: "low" | "medium" | "high" | "urgent"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -291,6 +379,8 @@ export const Constants = {
   public: {
     Enums: {
       user_role: ["admin", "user"],
+      occurrence_status: ["open", "in_progress", "resolved", "closed"],
+      occurrence_priority: ["low", "medium", "high", "urgent"],
     },
   },
 } as const
