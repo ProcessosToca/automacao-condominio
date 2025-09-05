@@ -24,7 +24,7 @@ import {
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import EmailCapture from '@/components/EmailCapture';
-import OccurrenceManagement from '@/components/OccurrenceManagement';
+import { GoogleSheetsTable } from '@/components/GoogleSheetsTable';
 import PropertyManagementCRUD from '@/components/PropertyManagement';
 
 
@@ -84,7 +84,7 @@ const PropertyManagement = () => {
             </TabsTrigger>
             <TabsTrigger value="occurrences" className="flex items-center">
               <AlertTriangle className="h-4 w-4 mr-2" />
-              Ocorrências
+              Levantamentos
             </TabsTrigger>
           </TabsList>
 
@@ -98,9 +98,12 @@ const PropertyManagement = () => {
             <EmailCapture />
           </TabsContent>
 
-          {/* Tab: Ocorrências */}
+          {/* Tab: Levantamentos */}
           <TabsContent value="occurrences" className="space-y-6">
-            <OccurrenceManagement />
+            <GoogleSheetsTable 
+              sheetUrl="https://docs.google.com/spreadsheets/d/1feuzsTzqNnxiZvqHsF6RiYBmxhKjrq8dwP946rySuuI/edit?gid=130052127#gid=130052127"
+              sheetName="Tabela_Condominio"
+            />
           </TabsContent>
         </Tabs>
       </main>

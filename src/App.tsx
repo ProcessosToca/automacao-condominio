@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import UserManagement from "./pages/UserManagement";
 import PropertyManagement from "./pages/PropertyManagement";
 import AdminCompanyRegistration from "./pages/AdminCompanyRegistration";
+import SheetsData from "./pages/SheetsData";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/users" element={<UserManagement />} />
             <Route path="/properties" element={<PropertyManagement />} />
             <Route path="/admin-companies" element={<AdminCompanyRegistration />} />
+            <Route path="/sheets-data" element={<SheetsData />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
