@@ -84,7 +84,7 @@ const PropertyManagement = () => {
             </TabsTrigger>
             <TabsTrigger value="occurrences" className="flex items-center">
               <AlertTriangle className="h-4 w-4 mr-2" />
-              Levantamentos
+              Ocorrências
             </TabsTrigger>
           </TabsList>
 
@@ -97,8 +97,6 @@ const PropertyManagement = () => {
           <TabsContent value="emails" className="space-y-6">
             <EmailCapture />
           </TabsContent>
-
-          {/* Tab: Levantamentos */}
           <TabsContent value="occurrences" className="space-y-6">
             <GoogleSheetsTable 
               sheetUrl="https://docs.google.com/spreadsheets/d/1feuzsTzqNnxiZvqHsF6RiYBmxhKjrq8dwP946rySuuI/edit?gid=130052127#gid=130052127"
