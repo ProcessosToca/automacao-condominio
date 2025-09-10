@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { LogOut, User, Phone, Mail, Shield, Settings, CreditCard, Users, Loader2, Building } from 'lucide-react';
+import { LogOut, User, Phone, Mail, Shield, Settings, CreditCard, Users, Loader2, Building, Database } from 'lucide-react';
 import { EditProfile } from '@/components/EditProfile';
 import { ChangePassword } from '@/components/ChangePassword';
 import { useState, useEffect } from 'react';
@@ -225,6 +225,22 @@ const Dashboard = () => {
                 >
                   <Building className="h-4 w-4 mr-2" />
                   Administradoras
+                </Button>
+                <Button 
+                  className="w-full" 
+                  variant="outline"
+                  onClick={() => navigate('/bulk-emails')}
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Emails em Massa
+                </Button>
+                <Button 
+                  className="w-full" 
+                  variant="outline"
+                  onClick={() => navigate('/spreadsheet-management')}
+                >
+                  <Database className="h-4 w-4 mr-2" />
+                  Gerenciar Planilha
                 </Button>
                 <Button className="w-full" variant="outline">
                   Relatórios

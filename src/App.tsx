@@ -11,6 +11,8 @@ import UserManagement from "./pages/UserManagement";
 import PropertyManagement from "./pages/PropertyManagement";
 import AdminCompanyRegistration from "./pages/AdminCompanyRegistration";
 import SheetsData from "./pages/SheetsData";
+import BulkEmails from "./pages/BulkEmails";
+import SpreadsheetManagement from "./pages/SpreadsheetManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +32,8 @@ const App = () => (
             <Route path="/properties" element={<PropertyManagement />} />
             <Route path="/admin-companies" element={<AdminCompanyRegistration />} />
             <Route path="/sheets-data" element={<SheetsData />} />
+            <Route path="/bulk-emails" element={<BulkEmails />} />
+            <Route path="/spreadsheet-management" element={<SpreadsheetManagement />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
