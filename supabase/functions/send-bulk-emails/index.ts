@@ -8,7 +8,7 @@ const corsHeaders = {
 }
 
 // Template HTML para o email de cobrança
-const getEmailTemplate = (occurrenceData: any) => {
+const getEmailTemplate = (occurrenceData: any, usePythonTemplate: boolean = false) => {
   const { 
     id, 
     title, 
@@ -17,11 +17,24 @@ const getEmailTemplate = (occurrenceData: any) => {
   } = occurrenceData;
 
   // Extrair número do endereço se existir
-  const addressParts = address ? address.split(',') : [];
+  const addressParts = address ? address.split('\n') : [];
   const endereco = addressParts[0] || '';
   const numero = addressParts[1] ? addressParts[1].trim() : '';
-  const complemento = addressParts[2] ? addressParts[2].trim() : '';
+  const complemento = ''; // Não temos campo específico para complemento
 
+  if (usePythonTemplate) {
+    // Template simples como solicitado
+    return `Olá, boa tarde, tudo bem?
+Poderia por gentileza me informar se constam débitos de condomínio em aberto relacionados ao imóvel abaixo?
+${id}
+
+Obrigada!
+
+${edificio}
+${endereco}${numero ? ', ' + numero : ''}${complemento ? ' - ' + complemento : ''}`;
+  }
+
+  // Template HTML original
   return `
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -174,7 +187,7 @@ serve(async (req) => {
   }
 
   try {
-    const { limit = 10, testMode = false } = await req.json()
+    const { limit = 10, testMode = false, usePythonTemplate = false } = await req.json()
 
     // Configurar Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -232,7 +245,7 @@ serve(async (req) => {
     for (const occurrence of occurrences) {
       try {
         const email = occurrence.properties.admin_email
-        const emailHtml = getEmailTemplate(occurrence)
+        const emailHtml = getEmailTemplate(occurrence, usePythonTemplate)
 
         if (testMode || !SENDGRID_API_KEY) {
           // Modo teste - apenas simular envio

@@ -172,6 +172,46 @@ const BulkEmailManager = () => {
     }
   };
 
+  const runPythonScript = async () => {
+    try {
+      setIsProcessing(true);
+      setLastResult(null);
+
+      toast.info('Executando script Python...');
+
+      // Simular execução do script Python
+      // Em um ambiente real, você chamaria uma API ou Edge Function
+      const { data, error } = await supabase.functions.invoke('send-bulk-emails', {
+        body: {
+          limit: emailLimit,
+          testMode: testMode,
+          usePythonTemplate: true
+        }
+      });
+
+      if (error) {
+        console.error('Erro na execução do script:', error);
+        toast.error('Erro ao executar script Python');
+        return;
+      }
+
+      setLastResult(data);
+      
+      if (data.success) {
+        toast.success(`Script Python executado: ${data.processed} emails processados`);
+        await loadStats();
+      } else {
+        toast.error('Erro na execução do script Python');
+      }
+
+    } catch (error) {
+      console.error('Erro ao executar script Python:', error);
+      toast.error('Erro ao executar script Python');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'Não enviado':
@@ -323,7 +363,7 @@ const BulkEmailManager = () => {
             />
           </div>
 
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 flex-wrap gap-2">
             <Button
               onClick={processEmails}
               disabled={isProcessing || (stats?.nao_enviado || 0) === 0}
@@ -335,6 +375,16 @@ const BulkEmailManager = () => {
                 <Play className="h-4 w-4 mr-2" />
               )}
               {isProcessing ? 'Processando...' : 'Iniciar Processamento'}
+            </Button>
+
+            <Button
+              onClick={runPythonScript}
+              disabled={isProcessing || (stats?.nao_enviado || 0) === 0}
+              variant="secondary"
+              className="flex items-center"
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Executar Script Python
             </Button>
 
             {(stats?.erro_no_envio || 0) > 0 && (

@@ -92,3 +92,6 @@ async function createTableDirect() {
 
 createTableDirect();
 
+
+
+

@@ -24,3 +24,8 @@ COMMENT ON COLUMN public.occurrences.email_status IS 'Status do envio de email: 
 COMMENT ON COLUMN public.occurrences.email_sent_at IS 'Data e hora do envio do email';
 COMMENT ON COLUMN public.occurrences.email_error IS 'Mensagem de erro caso o envio falhe';
 
+
+
+
+
+
